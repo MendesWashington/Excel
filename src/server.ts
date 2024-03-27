@@ -1,4 +1,5 @@
 import Express, { Request, Response } from "express";
+import { Buffer } from "node:buffer";
 import Excel from "excel4node";
 
 const app = Express();
@@ -16,7 +17,7 @@ app.get("/api/export", (req: Request, res: Response) => {
         size: 16,
       },
       fill: {
-        type: "",
+        type: "pattern",
         patternType: "solid",
         bgColor: "#FFFF00",
         fgColor: "#FFFF00",
@@ -42,74 +43,59 @@ app.get("/api/export", (req: Request, res: Response) => {
       .style(HeaderStyle);
 
     // Primeira coluna
-    worksheet.cell(2, 1).string("Gerência 1");
-    worksheet.cell(3, 1).string("Gerência 2");
-    worksheet.cell(4, 1).string("Gerência 3");
-    worksheet.cell(5, 1).string("Gerência 4");
+    for (let i = 2; i <= 10000; i++) {
+      worksheet.cell(i, 1).string("Gerência " + i);
+    }
 
     // Segunda coluna
-    worksheet.cell(2, 2).string("Carteira 2");
-    worksheet.cell(3, 2).string("Carteira 2");
-    worksheet.cell(4, 2).string("Carteira 3");
-    worksheet.cell(5, 2).string("Carteira 4");
+    for (let i = 2; i <= 10000; i++) {
+      worksheet.cell(i, 2).string("Carteira " + i);
+    }
 
     // Terceira coluna
-    worksheet.cell(2, 3).number(2);
-    worksheet.cell(3, 3).number(20);
-    worksheet.cell(4, 3).number(60);
-    worksheet.cell(5, 3).number(2);
+    for (let i = 2; i <= 10000; i++) {
+      worksheet.cell(i, 3).number(Math.floor(Math.random() * 100));
+    }
 
     // Quarta coluna
-    worksheet.cell(2, 4).number(0);
-    worksheet.cell(3, 4).number(2);
-    worksheet.cell(4, 4).number(50);
-    worksheet.cell(5, 4).number(0);
+    for (let i = 2; i <= 10000; i++) {
+      worksheet.cell(i, 4).number(Math.floor(Math.random() * 100));
+    }
 
     // Quinta coluna
-    worksheet.cell(2, 5).number(2);
-    worksheet.cell(3, 5).number(18);
-    worksheet.cell(4, 5).number(10);
-    worksheet.cell(5, 5).number(2);
+    for (let i = 2; i <= 10000; i++) {
+      worksheet.cell(i, 5).number(Math.floor(Math.random() * 100));
+    }
+
     // Sexta coluna
-    worksheet
-      .cell(2, 6)
-      .formula("=(D2/C2)*100")
-      .style({ numberFormat: "0.00%" });
-    worksheet
-      .cell(3, 6)
-      .formula("=(D3/C3)*100")
-      .style({ numberFormat: "0.00%" });
-    worksheet
-      .cell(4, 6)
-      .formula("=(D4/C4)*100")
-      .style({ numberFormat: "0.00%" });
+    for (let i = 2; i <= 10000; i++) {
+      worksheet
+        .cell(i, 6)
+        .formula(`=(D${i}/C${i})*100`)
+        .style({ numberFormat: "0.00%" });
+    }
+
     // Sétima coluna
-    worksheet.cell(2, 7).number(0);
-    worksheet.cell(3, 7).number(30);
-    worksheet.cell(4, 7).number(70);
+    for (let i = 2; i <= 10000; i++) {
+      worksheet.cell(i, 7).number(Math.floor(Math.random() * 100));
+    }
     // Oitava coluna
-    worksheet.cell(2, 8).number(0);
-    worksheet.cell(3, 8).number(0);
-    worksheet.cell(4, 8).number(70);
+    for (let i = 2; i <= 10000; i++) {
+      worksheet.cell(i, 8).number(Math.floor(Math.random() * 100));
+    }
+
     // Nona coluna
-    worksheet.cell(2, 9).number(0);
-    worksheet.cell(3, 9).number(30);
-    worksheet.cell(4, 9).number(0);
-    worksheet.cell(5, 9).number(0);
+    for (let i = 2; i <= 10000; i++) {
+      worksheet.cell(i, 9).number(Math.floor(Math.random() * 100));
+    }
 
     // Décima coluna
-    worksheet
-      .cell(2, 6)
-      .formula("=(H2/G2)*100")
-      .style({ numberFormat: "0.00%" });
-    worksheet
-      .cell(3, 6)
-      .formula("=(H3/G3)*100")
-      .style({ numberFormat: "0.00%" });
-    worksheet
-      .cell(4, 6)
-      .formula("=(H4/G4)*100")
-      .style({ numberFormat: "0.00%" });
+    for (let i = 2; i <= 10000; i++) {
+      worksheet
+        .cell(i, 10)
+        .formula(`=(H${i}/G${i})*100`)
+        .style({ numberFormat: "0.00%" });
+    }
 
     // Definir o cabeçalho de resposta para o tipo de arquivo Excel
     res.setHeader(
@@ -119,12 +105,13 @@ app.get("/api/export", (req: Request, res: Response) => {
     res.setHeader("Content-Disposition", "attachment; filename=export.xlsx");
 
     // Enviar o arquivo Excel como resposta
-    workbook.writeToBuffer().then((buffer: string) => {
-      let binarybuffer = new Buffer(buffer, "binary");
+    workbook.writeToBuffer().then((buffer: Buffer) => {
+      let binarybuffer = Buffer.alloc(buffer.length, buffer, "binary");
       res.attachment("filename.xlsx");
       return res.send(binarybuffer);
     });
   } catch (error) {
+    console.log(error);
     return res.status(500).send(error);
   }
 });
