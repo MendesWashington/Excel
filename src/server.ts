@@ -2,17 +2,17 @@ import Express, { Request, Response } from "express";
 import { Buffer } from "node:buffer";
 import Excel from "excel4node";
 import { format } from "date-fns";
+import path from "path";
 
 const app = Express();
 
 app.get("/api/export", (req: Request, res: Response) => {
   try {
-    // Criar um novo arquivo Excel
     const workbook = new Excel.Workbook();
     const sumario = workbook.addWorksheet("Sumário");
     const extrato = workbook.addWorksheet("Extrato");
 
-    const HeaderStyle = workbook.createStyle({
+    const headerStyle = workbook.createStyle({
       font: {
         bold: true,
         color: "#000000",
@@ -21,223 +21,182 @@ app.get("/api/export", (req: Request, res: Response) => {
       fill: {
         type: "pattern",
         patternType: "solid",
-        bgColor: "#FFFF00",
-        fgColor: "#FFFF00",
+        bgColor: "#b6b6b8",
+        fgColor: "#b6b6b8",
+      },
+      alignment: {
+        vertical: "center",
+        horizontal: "left",
       },
     });
 
-    // Adicionar os cabeçalhos em negrito
-    sumario.cell(1, 1).string("GERÊNCIA").style(HeaderStyle);
-    sumario.cell(1, 2).string("CARTEIRA").style(HeaderStyle);
-    sumario.cell(1, 3).string("ADQUIRIDO ONLINE").style(HeaderStyle);
-    sumario.cell(1, 4).string("CONSUMIDO ONLINE").style(HeaderStyle);
-    sumario.cell(1, 5).string("SALDO ONLINE").style(HeaderStyle);
-    sumario.cell(1, 6).string("PERCENTUAL CONSUMIDO ONLINE").style(HeaderStyle);
-    sumario.cell(1, 7).string("ADQUIRIDO REMOTO").style(HeaderStyle);
-    sumario.cell(1, 8).string("CONSUMIDO REMOTO").style(HeaderStyle);
-    sumario.cell(1, 9).string("SALDO REMOTO").style(HeaderStyle);
-    sumario
-      .cell(1, 10)
-      .string("PERCENTUAL CONSUMIDO REMOTO")
-      .style(HeaderStyle);
+    const titleStyle = workbook.createStyle({
+      font: {
+        bold: true,
+        color: "#000000",
+        size: 24,
+      },
+      fill: {
+        type: "pattern",
+        patternType: "solid",
+        bgColor: "#b6b6b8",
+        fgColor: "#b6b6b8",
+      },
+      alignment: {
+        vertical: "center",
+        horizontal: "center",
+      },
+    });
 
-    // Primeira coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 1).string("Gerência " + i);
-    }
+    const borderStyle: any = {
+      top: { style: "thin", color: "#949494" },
+      bottom: { style: "thin", color: "#949494" },
+      left: { style: "thin", color: "#949494" },
+      right: { style: "thin", color: "#949494" },
+    };
 
-    // Segunda coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 2).string("Carteira " + i);
-    }
+    const imagePath = path.join(__dirname, "./images/logo.png");
 
-    // Terceira coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 3).number(Math.floor(Math.random() * 100));
-    }
+    const imagePosition: any = {
+      type: "oneCellAnchor",
+      from: { col: 1, colOff: "30cm", row: 1, rowOff: "1cm" },
+      to: { col: 10, colOff: "2cm", row: 1, rowOff: "2cm" },
+    };
 
-    // Quarta coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 4).number(Math.floor(Math.random() * 100));
-    }
+    // SUMÁRIO =========================================================
 
-    // Quinta coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 5).number(Math.floor(Math.random() * 100));
-    }
+    sumario.addImage({
+      path: imagePath,
+      type: "picture",
+      position: imagePosition,
+    });
 
-    // Sexta coluna
-    for (let i = 2; i <= 10000; i++) {
+    sumario.row(1).setHeight(80);
+
+    sumario.cell(2, 1).string("SUMÁRIO").style(titleStyle);
+
+    sumario.row(2).setHeight(50);
+
+    // params: linha inicial, coluna inicial, linha final, coluna final, isMerged
+    sumario.cell(2, 1, 2, 10, true);
+
+    const sumarioHeader = [
+      "GERÊNCIA",
+      "CARTEIRA",
+      "ADQUIRIDO ONLINE",
+      "CONSUMIDO ONLINE",
+      "SALDO ONLINE",
+      "PERCENTUAL CONSUMIDO ONLINE",
+      "ADQUIRIDO REMOTO",
+      "CONSUMIDO REMOTO",
+      "SALDO REMOTO",
+      "PERCENTUAL CONSUMIDO REMOTO",
+    ];
+
+    sumarioHeader.forEach((header, index) => {
       sumario
-        .cell(i, 6)
-        .formula(`=(D${i}/C${i})*100`)
+        .cell(3, index + 1)
+        .string(header)
+        .style(headerStyle);
+      sumario.column(index + 1).setWidth(header.length + 15);
+    });
+
+    for (let row = 4; row <= 10000; row++) {
+      for (let col = 1; col <= 10; col++) {
+        const cell = sumario.cell(row, col);
+        cell.style({ border: borderStyle });
+      }
+      sumario.cell(row, 1).string("Gerência " + row);
+      sumario.cell(row, 2).string("Carteira " + row);
+      sumario.cell(row, 3).number(Math.floor(Math.random() * 100));
+      sumario.cell(row, 4).number(Math.floor(Math.random() * 100));
+      sumario
+        .cell(row, 5)
+        .formula(`=C${row}-D${row}`)
+        .style({ numberFormat: "0.00" });
+      sumario
+        .cell(row, 6)
+        .formula(`=D${row}/C${row}`)
+        .style({ numberFormat: "0.00%" });
+      sumario.cell(row, 7).number(Math.floor(Math.random() * 100));
+      sumario.cell(row, 8).number(Math.floor(Math.random() * 100));
+      sumario
+        .cell(row, 9)
+        .formula(`=G${row}-H${row}`)
+        .style({ numberFormat: "0.00" });
+      sumario
+        .cell(row, 10)
+        .formula(`=H${row}/G${row}`)
         .style({ numberFormat: "0.00%" });
     }
 
-    // Sétima coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 7).number(Math.floor(Math.random() * 100));
-    }
-    // Oitava coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 8).number(Math.floor(Math.random() * 100));
-    }
+    // EXTRATO =========================================================
 
-    // Nona coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 9).number(Math.floor(Math.random() * 100));
-    }
+    extrato.addImage({
+      path: imagePath,
+      type: "picture",
+      position: imagePosition,
+    });
 
-    // Décima coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario
-        .cell(i, 10)
-        .formula(`=(H${i}/G${i})*100`)
-        .style({ numberFormat: "0.00%" });
-    }
+    extrato.row(1).setHeight(80);
 
-    // Adicionar os cabeçalhos em negrito
-    sumario.cell(1, 1).string("GERÊNCIA").style(HeaderStyle);
-    sumario.cell(1, 2).string("CARTEIRA").style(HeaderStyle);
-    sumario.cell(1, 3).string("ADQUIRIDO ONLINE").style(HeaderStyle);
-    sumario.cell(1, 4).string("CONSUMIDO ONLINE").style(HeaderStyle);
-    sumario.cell(1, 5).string("SALDO ONLINE").style(HeaderStyle);
-    sumario.cell(1, 6).string("PERCENTUAL CONSUMIDO ONLINE").style(HeaderStyle);
-    sumario.cell(1, 7).string("ADQUIRIDO REMOTO").style(HeaderStyle);
-    sumario.cell(1, 8).string("CONSUMIDO REMOTO").style(HeaderStyle);
-    sumario.cell(1, 9).string("SALDO REMOTO").style(HeaderStyle);
-    sumario
-      .cell(1, 10)
-      .string("PERCENTUAL CONSUMIDO REMOTO")
-      .style(HeaderStyle);
+    extrato.cell(2, 1).string("EXTRATO").style(titleStyle);
 
-    // Primeira coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 1).string("Gerência " + i);
-    }
+    extrato.row(2).setHeight(50);
 
-    // Segunda coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 2).string("Carteira " + i);
-    }
+    extrato.cell(2, 1, 2, 14, true);
 
-    // Terceira coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 3).number(Math.floor(Math.random() * 100));
-    }
+    const extratoHeader = [
+      "CÓDIGO ECG",
+      "CÓDIGO CLIENTE",
+      "DESCRIÇÃO",
+      "GERÊNCIA",
+      "CARTEIRA",
+      "ON/REMOTA",
+      "MODERADO",
+      "MODERADOR",
+      "OWNER CLIENTE",
+      "OWNER ECG",
+      "ATIVIDADES",
+      "DATA",
+      "CRÉDITOS",
+      "METODOLOGIA DE PESQUISA",
+    ];
 
-    // Quarta coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 4).number(Math.floor(Math.random() * 100));
-    }
-
-    // Quinta coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 5).number(Math.floor(Math.random() * 100));
-    }
-
-    // Sexta coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario
-        .cell(i, 6)
-        .formula(`=(D${i}/C${i})*100`)
-        .style({ numberFormat: "0.00%" });
-    }
-
-    // Sétima coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 7).number(Math.floor(Math.random() * 100));
-    }
-    // Oitava coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 8).number(Math.floor(Math.random() * 100));
-    }
-
-    // Nona coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario.cell(i, 9).number(Math.floor(Math.random() * 100));
-    }
-
-    // Décima coluna
-    for (let i = 2; i <= 10000; i++) {
-      sumario
-        .cell(i, 10)
-        .formula(`=(H${i}/G${i})*100`)
-        .style({ numberFormat: "0.00%" });
-    }
-    //Extrato
-    // Adicionar os cabeçalhos em negrito
-    extrato.cell(1, 1).string("GERÊNCIA").style(HeaderStyle);
-    extrato.cell(1, 2).string("CARTEIRA").style(HeaderStyle);
-    extrato.cell(1, 3).string("ADQUIRIDO ONLINE").style(HeaderStyle);
-    extrato.cell(1, 4).string("CONSUMIDO ONLINE").style(HeaderStyle);
-    extrato.cell(1, 5).string("SALDO ONLINE").style(HeaderStyle);
-    extrato.cell(1, 6).string("PERCENTUAL CONSUMIDO ONLINE").style(HeaderStyle);
-    extrato.cell(1, 7).string("ADQUIRIDO REMOTO").style(HeaderStyle);
-    extrato.cell(1, 8).string("CONSUMIDO REMOTO").style(HeaderStyle);
-    extrato.cell(1, 9).string("SALDO REMOTO").style(HeaderStyle);
-    extrato
-      .cell(1, 10)
-      .string("PERCENTUAL CONSUMIDO REMOTO")
-      .style(HeaderStyle);
-
-    // Primeira coluna
-    for (let i = 2; i <= 10000; i++) {
-      extrato.cell(i, 1).string("Gerência " + i);
-    }
-
-    // Segunda coluna
-    for (let i = 2; i <= 10000; i++) {
-      extrato.cell(i, 2).string("Carteira " + i);
-    }
-
-    // Terceira coluna
-    for (let i = 2; i <= 10000; i++) {
-      extrato.cell(i, 3).number(Math.floor(Math.random() * 100));
-    }
-
-    // Quarta coluna
-    for (let i = 2; i <= 10000; i++) {
-      extrato.cell(i, 4).number(Math.floor(Math.random() * 100));
-    }
-
-    // Quinta coluna
-    for (let i = 2; i <= 10000; i++) {
-      extrato.cell(i, 5).number(Math.floor(Math.random() * 100));
-    }
-
-    // Sexta coluna
-    for (let i = 2; i <= 10000; i++) {
+    extratoHeader.forEach((header, index) => {
       extrato
-        .cell(i, 6)
-        .formula(`=(D${i}/C${i})*100`)
-        .style({ numberFormat: "0.00%" });
+        .cell(3, index + 1)
+        .string(header)
+        .style(headerStyle);
+      extrato.column(index + 1).setWidth(header.length + 15);
+    });
+
+    for (let row = 4; row <= 1000; row++) {
+      for (let col = 1; col <= 14; col++) {
+        const cell = extrato.cell(row, col);
+        cell.style({ border: borderStyle });
+      }
+      extrato.cell(row, 1).string("Código ECG");
+      extrato.cell(row, 2).string("Código Cliente");
+      extrato.cell(row, 3).string("Descrição");
+      extrato.cell(row, 4).string("Carteira" + row);
+      extrato.cell(row, 5).string("Gerência" + row);
+      extrato.cell(row, 6).string("Online ou Remota");
+      extrato.cell(row, 7).string("Moderação");
+      extrato.cell(row, 8).string("Adelina");
+      extrato.cell(row, 9).string("Alan");
+      extrato.cell(row, 10).string("Bete");
+      extrato.cell(row, 11).string("Atividade");
+      extrato.cell(row, 12).string("28/03/24");
+      extrato.cell(row, 13).number(Math.floor(Math.random() * 100));
+      extrato.cell(row, 14).string("Exploratória");
     }
 
-    // Sétima coluna
-    for (let i = 2; i <= 10000; i++) {
-      extrato.cell(i, 7).number(Math.floor(Math.random() * 100));
-    }
-    // Oitava coluna
-    for (let i = 2; i <= 10000; i++) {
-      extrato.cell(i, 8).number(Math.floor(Math.random() * 100));
-    }
-
-    // Nona coluna
-    for (let i = 2; i <= 10000; i++) {
-      extrato.cell(i, 9).number(Math.floor(Math.random() * 100));
-    }
-
-    // Décima coluna
-    for (let i = 2; i <= 10000; i++) {
-      extrato
-        .cell(i, 10)
-        .formula(`=(H${i}/G${i})*100`)
-        .style({ numberFormat: "0.00%" });
-    }
+    // EXTRATO =========================================================
 
     // Definir o cabeçalho de resposta para o tipo de arquivo Excel
     const currentDate = new Date();
+
     const formattedDate = format(currentDate, "yyyy-MM-dd_HH:mm:ss");
     res.setHeader(
       "Content-Type",
